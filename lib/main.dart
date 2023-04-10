@@ -1,3 +1,10 @@
+import 'dart:math';
+
+import 'package:ai_app/repo/open_api_repo_impl.dart';
+import 'package:avatar_glow/avatar_glow.dart';
+import 'package:chat_bubbles/bubbles/bubble_special_two.dart';
+import 'package:chat_bubbles/chat_bubbles.dart';
+import 'package:chat_bubbles/message_bars/message_bar.dart';
 import 'package:dart_openai/openai.dart';
 import 'package:flutter/material.dart';
 
@@ -5,7 +12,7 @@ import 'env/env.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  OpenAI.apiKey = "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";
+  OpenAI.apiKey = "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";
   runApp(const MyApp());
 }
 
@@ -20,16 +27,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.indigo,
+        brightness: Brightness.light,
       ),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
@@ -38,15 +37,6 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
   final String title;
 
@@ -64,69 +54,119 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void didChangeDependencies() async {
+    OpenAiRepoImpl openAiRepoImpl = OpenAiRepoImpl();
+
+    // openAiRepoImpl.completion(text: "what is flutter").then(
+    //   (value) {
+    //     print("is image or not");
+    //     print(value);
+    //   },
+    // );
     super.didChangeDependencies();
   }
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  bool animete = false;
 
+  List<Message> messages = [];
+
+  bool isResponseReceiving = false;
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
+    return SafeArea(
+      bottom: true,
+      left: false,
+      top: false,
+      right: false,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Oepn AI"),
+        ),
+        body: Stack(
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+            messages.isEmpty
+                ? Center(
+                    child: Text(
+                    "Start chat with ai",
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ))
+                : ListView.builder(
+                    itemCount: messages.length,
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.only(top: 10, bottom: 10),
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      return messages.isEmpty
+                          ? Text(
+                              "Start chat with ai",
+                              style: Theme.of(context).textTheme.headlineLarge,
+                            )
+                          : isURl(messages[index].text)
+                              ? BubbleNormalImage(
+                                  isSender: messages[index].isMe,
+                                  id: Random().nextInt(100000).toString(),
+                                  image: Image.network(messages[index].text),
+                                )
+                              : BubbleSpecialTwo(
+                                  color: Colors.indigo.withOpacity(0.2),
+                                  text: messages[index].text,
+                                  isSender: messages[index].isMe,
+                                );
+                    },
+                  ),
+            Align(
+                alignment: Alignment.bottomLeft,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    isResponseReceiving
+                        ? Text(
+                            "Getting response",
+                            style:
+                                TextStyle(fontSize: 10, color: Colors.indigo),
+                          )
+                        : MessageBar(
+                            onSend: (message) async {
+                              setState(() {
+                                messages
+                                    .add(Message(text: message, isMe: true));
+                                isResponseReceiving = true;
+                              });
+
+                              OpenAiRepoImpl openAiRepoImpl = OpenAiRepoImpl();
+
+                              await openAiRepoImpl
+                                  .completion(text: message)
+                                  .then(
+                                (ai) {
+                                  setState(() {
+                                    messages.add(
+                                      Message(
+                                          text: ai ?? "Some thing want wrong",
+                                          isMe: false),
+                                    );
+                                    isResponseReceiving = false;
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                  ],
+                )),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+}
+
+bool isURl(String url) {
+  return RegExp(
+          r'^((?:.|\n)*?)((http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)([-A-Z0-9.]+)(/[-A-Z0-9+&@#/%=~_|!:,.;]*)?(\?[A-Z0-9+&@#/%=~_|!:‌​,.;]*)?)')
+      .hasMatch(url);
+}
+
+class Message {
+  String text;
+  bool isMe;
+  Message({required this.text, required this.isMe});
 }
