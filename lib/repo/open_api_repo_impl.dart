@@ -16,8 +16,6 @@ class OpenAiRepoImpl extends OpenAiReop {
     OpenAIChatCompletionModel chat = await OpenAI.instance.chat.create(
       model: "gpt-3.5-turbo",
       messages: _messages,
-      maxTokens: 50,
-      temperature: 0.5,
     );
     var data = chat.choices.first.message.content;
 
@@ -37,28 +35,28 @@ class OpenAiRepoImpl extends OpenAiReop {
 
   @override
   Future<String?> completion({required String text}) async {
-    // OpenAIChatCompletionModel completion = await OpenAI.instance.chat.create(
-    //   model: "gpt-3.5-turbo",
-    //   temperature: 0.5,
-    //   maxTokens: 50,
-    //   messages: [
-    //     OpenAIChatCompletionChoiceMessageModel(
-    //       content:
-    //           'Does this message want to generate an AI picture, image, art or anything similar? $text . Simply answer with a yes or no.',
-    //       role: OpenAIChatMessageRole.user,
-    //     ),
-    //   ],
-    // );
+    OpenAIChatCompletionModel completion = await OpenAI.instance.chat.create(
+      model: "gpt-3.5-turbo",
+      temperature: 0.5,
+      maxTokens: 50,
+      messages: [
+        OpenAIChatCompletionChoiceMessageModel(
+          content:
+              'Does this message want to generate an AI picture, image, art or anything similar? $text . Simply answer with a yes or no.',
+          role: OpenAIChatMessageRole.user,
+        ),
+      ],
+    );
 
-    // print(completion.choices.length);
+    print(completion.choices.length);
 
-    // print(completion.choices[0].message.content);
+    print(completion.choices[0].message.content);
 
     switch (text) {
-      case 'create image':
-      case 'image create':
-      // case 'Yes.':
-      // case 'yes.':
+      case 'yes':
+      case 'Yes':
+      case 'Yes.':
+      case 'yes.':
         final res = await imageAi(text: text);
         return res[0];
       default:
