@@ -7,12 +7,13 @@ import 'package:chat_bubbles/chat_bubbles.dart';
 import 'package:chat_bubbles/message_bars/message_bar.dart';
 import 'package:dart_openai/openai.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 import 'env/env.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  OpenAI.apiKey = "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";
+  OpenAI.apiKey = Env.apiKey;
   runApp(const MyApp());
 }
 
@@ -107,9 +108,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                   image: Image.network(messages[index].text),
                                 )
                               : BubbleSpecialTwo(
-                                  color: Colors.indigo.withOpacity(0.2),
                                   text: messages[index].text,
+                                  color: Colors.indigo.withOpacity(0.2),
+
                                   isSender: messages[index].isMe,
+                                  // ),
                                 );
                     },
                   ),
@@ -119,37 +122,37 @@ class _MyHomePageState extends State<MyHomePage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     isResponseReceiving
-                        ? Text(
-                            "Getting response",
-                            style:
-                                TextStyle(fontSize: 10, color: Colors.indigo),
+                        ? const Center(
+                            child: Text(
+                              "Getting response",
+                              style:
+                                  TextStyle(fontSize: 10, color: Colors.indigo),
+                            ),
                           )
-                        : MessageBar(
-                            onSend: (message) async {
-                              setState(() {
-                                messages
-                                    .add(Message(text: message, isMe: true));
-                                isResponseReceiving = true;
-                              });
+                        : SizedBox(),
+                    MessageBar(
+                      onSend: (message) async {
+                        setState(() {
+                          messages.add(Message(text: message, isMe: true));
+                          isResponseReceiving = true;
+                        });
 
-                              OpenAiRepoImpl openAiRepoImpl = OpenAiRepoImpl();
+                        OpenAiRepoImpl openAiRepoImpl = OpenAiRepoImpl();
 
-                              await openAiRepoImpl
-                                  .completion(text: message)
-                                  .then(
-                                (ai) {
-                                  setState(() {
-                                    messages.add(
-                                      Message(
-                                          text: ai ?? "Some thing want wrong",
-                                          isMe: false),
-                                    );
-                                    isResponseReceiving = false;
-                                  });
-                                },
+                        await openAiRepoImpl.completion(text: message).then(
+                          (ai) {
+                            setState(() {
+                              messages.add(
+                                Message(
+                                    text: ai ?? "Some thing want wrong",
+                                    isMe: false),
                               );
-                            },
-                          ),
+                              isResponseReceiving = false;
+                            });
+                          },
+                        );
+                      },
+                    ),
                   ],
                 )),
           ],
