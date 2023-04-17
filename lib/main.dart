@@ -9,6 +9,8 @@ import 'package:chat_bubbles/message_bars/message_bar.dart';
 import 'package:dart_openai/openai.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 import 'env/env.dart';
 
@@ -58,20 +60,52 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {});
       },
     );
+    _initSpeech();
     super.initState();
   }
 
+  SpeechToText _speechToText = SpeechToText();
+  bool _speechEnabled = false;
+  String _lastWords = '';
+  bool isListening = false;
   @override
   void didChangeDependencies() async {
-    OpenAiRepoImpl openAiRepoImpl = OpenAiRepoImpl();
-
-    // openAiRepoImpl.completion(text: "what is flutter").then(
-    //   (value) {
-    //     print("is image or not");
-    //     print(value);
-    //   },
-    // );
     super.didChangeDependencies();
+  }
+
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize();
+    setState(() {});
+  }
+
+  /// Each time to start a speech recognition session
+  void _startListening() async {
+    setState(() {
+      isListening = true;
+    });
+    await _speechToText.listen(onResult: _onSpeechResult);
+    setState(() {});
+  }
+
+  /// Manually stop the active speech recognition session
+  /// Note that there are also timeouts that each platform enforces
+  /// and the SpeechToText plugin supports setting timeouts on the
+  /// listen method.
+  void _stopListening() async {
+    await _speechToText.stop();
+
+    setState(() {
+      isListening = false;
+    });
+  }
+
+  /// This is the callback that the SpeechToText plugin calls when
+  /// the platform returns recognized words.
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      _lastWords = result.recognizedWords;
+      isListening = false;
+    });
   }
 
   ScrollController _scrollController = ScrollController();
@@ -142,33 +176,86 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                           )
                         : SizedBox(),
-                    MessageBar(
-                      onSend: (message) async {
-                        setState(() {
-                          messages.add(Message(text: message, isMe: true));
-                          isResponseReceiving = true;
-                        });
-
-                        OpenAiRepoImpl openAiRepoImpl = OpenAiRepoImpl();
-
-                        await openAiRepoImpl.completion(text: message).then(
-                          (ai) {
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minWidth: 400,
+                          maxWidth: 600,
+                        ),
+                        child: MessageBar(
+                          messageBarColor: Colors.indigo,
+                          actions: [
+                            InkWell(
+                              child: Icon(
+                                Icons.mic,
+                                color: Colors.white,
+                              ),
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    content: SizedBox(
+                                      height: 200,
+                                      width: 200,
+                                      child: AvatarGlow(
+                                        endRadius: 80,
+                                        repeat: isListening,
+                                        showTwoGlows: true,
+                                        glowColor: Colors.indigoAccent,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            if (isListening) {
+                                              _stopListening();
+                                            } else {
+                                              _startListening();
+                                            }
+                                          },
+                                          child: const Center(
+                                              child: CircleAvatar(
+                                                  radius: 60,
+                                                  child: Icon(
+                                                    Icons.mic,
+                                                    color: Colors.white,
+                                                  ))),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            SizedBox(
+                              width: 10,
+                            ),
+                          ],
+                          onSend: (message) async {
                             setState(() {
-                              messages.add(
-                                Message(
-                                    text: ai ?? "Some thing want wrong",
-                                    isMe: false),
-                              );
-                              isResponseReceiving = false;
+                              messages.add(Message(text: message, isMe: true));
+                              isResponseReceiving = true;
                             });
+
+                            OpenAiRepoImpl openAiRepoImpl = OpenAiRepoImpl();
+
+                            await openAiRepoImpl.completion(text: message).then(
+                              (ai) {
+                                setState(() {
+                                  messages.add(
+                                    Message(
+                                        text: ai ?? "Some thing want wrong",
+                                        isMe: false),
+                                  );
+                                  isResponseReceiving = false;
+                                });
+                              },
+                            );
+                            _scrollController.animateTo(
+                              _scrollController.position.maxScrollExtent,
+                              curve: Curves.easeOut,
+                              duration: const Duration(milliseconds: 300),
+                            );
                           },
-                        );
-                        _scrollController.animateTo(
-                          _scrollController.position.maxScrollExtent,
-                          curve: Curves.easeOut,
-                          duration: const Duration(milliseconds: 300),
-                        );
-                      },
+                        ),
+                      ),
                     ),
                   ],
                 )),
