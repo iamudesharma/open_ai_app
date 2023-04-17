@@ -53,6 +53,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
+    _scrollController.addListener(
+      () {
+        setState(() {});
+      },
+    );
     super.initState();
   }
 
@@ -68,6 +73,8 @@ class _MyHomePageState extends State<MyHomePage> {
     // );
     super.didChangeDependencies();
   }
+
+  ScrollController _scrollController = ScrollController();
 
   bool animete = false;
 
@@ -94,6 +101,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ))
                 : ListView.builder(
+                    reverse: false,
+                    controller: _scrollController,
                     itemCount: messages.length,
                     shrinkWrap: true,
                     padding: const EdgeInsets.only(top: 10, bottom: 130),
@@ -153,6 +162,11 @@ class _MyHomePageState extends State<MyHomePage> {
                               isResponseReceiving = false;
                             });
                           },
+                        );
+                        _scrollController.animateTo(
+                          _scrollController.position.maxScrollExtent,
+                          curve: Curves.easeOut,
+                          duration: const Duration(milliseconds: 300),
                         );
                       },
                     ),
