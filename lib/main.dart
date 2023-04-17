@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:ai_app/key.dart';
 import 'package:ai_app/repo/open_api_repo_impl.dart';
 import 'package:avatar_glow/avatar_glow.dart';
 import 'package:chat_bubbles/bubbles/bubble_special_two.dart';
@@ -13,7 +14,9 @@ import 'env/env.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  OpenAI.apiKey = Env.apiKey;
+  // OpenAI.apiKey ="";
+  OpenAI.apiKey = OpenAiKey.value;
+
   runApp(const MyApp());
 }
 
@@ -93,8 +96,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 : ListView.builder(
                     itemCount: messages.length,
                     shrinkWrap: true,
-                    padding: const EdgeInsets.only(top: 10, bottom: 10),
-                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(top: 10, bottom: 130),
+                    // physics: const NeverScrollableScrollPhysics(),
                     itemBuilder: (context, index) {
                       return messages.isEmpty
                           ? Text(
@@ -163,9 +166,7 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 bool isURl(String url) {
-  return RegExp(
-          r'^((?:.|\n)*?)((http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)([-A-Z0-9.]+)(/[-A-Z0-9+&@#/%=~_|!:,.;]*)?(\?[A-Z0-9+&@#/%=~_|!:‌​,.;]*)?)')
-      .hasMatch(url);
+  return RegExp(r'http(s)?://[\w.-]+(/\w+)*(\?\S+)?').hasMatch(url);
 }
 
 class Message {

@@ -26,43 +26,53 @@ class OpenAiRepoImpl extends OpenAiReop {
       ),
     );
 
-    print(_messages.first.toMap());
-
-    print(_messages.last.toMap());
+    for (var i = 0; i < _messages.length; i++) {
+      print(_messages[i].toMap());
+    }
 
     return data;
   }
 
   @override
   Future<String?> completion({required String text}) async {
-    OpenAIChatCompletionModel completion = await OpenAI.instance.chat.create(
-      model: "gpt-3.5-turbo",
-      temperature: 0.5,
-      maxTokens: 50,
-      messages: [
-        OpenAIChatCompletionChoiceMessageModel(
-          content:
-              'Does this message want to generate an AI picture, image, art or anything similar? $text . Simply answer with a yes or no.',
-          role: OpenAIChatMessageRole.user,
-        ),
-      ],
-    );
+    // OpenAIChatCompletionModel completion = await OpenAI.instance.chat.create(
+    //   model: "gpt-3.5-turbo",
+    //   temperature: 0.5,
+    //   maxTokens: 50,
+    //   messages: [
+    //     OpenAIChatCompletionChoiceMessageModel(
+    //       content:
+    //           'Does this message want to generate an AI picture, image, art or anything similar? $text . Simply answer with a yes or no.',
+    //       role: OpenAIChatMessageRole.user,
+    //     ),
+    //   ],
+    // );
 
-    print(completion.choices.length);
+    // print(completion.choices.length);
 
-    print(completion.choices[0].message.content);
+    // print(completion.choices[0].message.content);
 
-    switch (text) {
-      case 'yes':
-      case 'Yes':
-      case 'Yes.':
-      case 'yes.':
-        final res = await imageAi(text: text);
-        return res[0];
-      default:
-        final res = await chatAi(text: text);
-        return res;
+    if (text.contains('create image') ||
+        text.contains('create images') ||
+        text.contains('image create') ||
+        text.contains('images create')) {
+      final res = await imageAi(text: text);
+      return res[0];
+    } else {
+      final res = await chatAi(text: text);
+      return res;
     }
+    // switch (text) {
+    //   case text.contains('create image'):
+    //   case 'create images':
+    //     // case 'Yes.':
+    //     // case 'yes.':
+    //     final res = await imageAi(text: text);
+    //     return res[0];
+    //   default:
+    //     final res = await chatAi(text: text);
+    //     return res;
+    // }
   }
 
   @override
